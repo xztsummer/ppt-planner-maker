@@ -1,7 +1,7 @@
-PPT Agent Kit 原创部分许可
+PPT Planner Maker 原创部分许可
 Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
 Copyright (c) 2026 xztsummer
-https://github.com/xztsummer/ppt-agent-kit
+https://github.com/xztsummer/ppt-planner-maker
 
 =======================================================================
 
@@ -9,21 +9,14 @@ https://github.com/xztsummer/ppt-agent-kit
 
 本许可证仅适用于本仓库维护者的原创部分：
 
-- 根目录文档：`README.md`、`AGENTS.md`
-- 流程编排 Skill：`skills/ppt-planner-maker/` 下的全部文件
-- 测试用例与报告：`tests/` 下的全部文件
-- 本文件 `LICENSE` 与根目录 `THIRD_PARTY_NOTICES.md`
+- 根目录文档：`README.md`、`README.en.md`、`AGENTS.md`、`THIRD_PARTY_NOTICES.md`
+- 流程编排 Skill：`SKILL.md`，以及 `references/`、`scripts/`、`docs/`、`tests/` 下的全部文件
+- 本文件 `LICENSE`
 
-以下内容不属于本许可证的适用范围，按各自原有许可证使用，详见
-`THIRD_PARTY_NOTICES.md`：
+以下内容不属于本许可证的适用范围：
 
-- `skills/ppt-master/`                        MIT
-- `skills/html-ppt/`                          MIT
-- `skills/guizang-ppt-skill/`                 AGPL-3.0
-- `skills/gorden-ppt-skill/`                  MIT（代码）；`templates/` 素材为非商业许可
-- `references/`                               用户提供的参考素材
-- `projects/`                                 使用本工具生成的项目成果
-- `【只读】不同模型+skill组合效果示例/`        第三方 Skill 生成的示例成品
+- 运行时安装的外部制作 Skill（`ppt-master`、`gorden-ppt-skill`、`html-ppt`、`guizang-ppt-skill`）不随本仓库分发，按各自原有许可证使用，详见 `THIRD_PARTY_NOTICES.md`。
+- 用户提供的工作区材料与生成的项目成果（`projects/`、`output/`、`assets/` 等）不属于本仓库。
 
 二、许可摘要（便于理解，不构成条款）
 
@@ -42,8 +35,8 @@ https://github.com/xztsummer/ppt-agent-kit
 
 推荐署名格式：
 
-    ppt-agent-kit by xztsummer, licensed under CC BY-NC 4.0.
-    https://github.com/xztsummer/ppt-agent-kit
+    ppt-planner-maker by xztsummer, licensed under CC BY-NC 4.0.
+    https://github.com/xztsummer/ppt-planner-maker
 
 三、法律条款
 

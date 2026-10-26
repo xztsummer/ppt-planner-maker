@@ -17,7 +17,7 @@
 - 内容结构、页序或结论要大改 → 入口②，把 PPTX 当材料提取大纲；若同时要求保留原版式，先评估 Edit Native 能否承载，不能承载时说明差异并请用户选择。
 - 要输出 HTML、PDF 或其他格式 → 入口②对应分支。
 - 用户只给了 PPTX 截图或 PDF，没有 `.pptx` → 只能作为材料，按入口②重新制作；不要声称在做原生编辑。
-- 旧版 `.ppt` → 先尝试转换：本机有 LibreOffice 时执行 `soffice --headless --convert-to pptx --outdir {项目目录}/sources {原文件}`（Windows 上 `soffice` 不在 PATH 时，常见路径为 `C:\Program Files\LibreOffice\program\soffice.exe`）。转换可能丢失动画、字体或版式细节，须先向用户说明，并展示转换后的解析结果，用户同意后再按入口③继续；原 `.ppt` 同样保留在 `sources/`。没有转换工具或转换失败时，按入口②作为材料重做。
+- 旧版 `.ppt` → 先尝试转换：本机有 LibreOffice 时执行 `soffice --headless --convert-to pptx --outdir {项目目录}/sources {原文件}`（Windows 上 `soffice` 不在 PATH 时，常见位置是 LibreOffice 安装目录下的 `program/soffice.exe`）。转换可能丢失动画、字体或版式细节，须先向用户说明，并展示转换后的解析结果，用户同意后再按入口③继续；原 `.ppt` 同样保留在 `sources/`。没有转换工具或转换失败时，按入口②作为材料重做。
 
 ## 修改方式
 

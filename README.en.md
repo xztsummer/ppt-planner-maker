@@ -1,292 +1,253 @@
-# ppt-agent-kit
+# ppt-planner-maker
 
 [中文](README.md) | **English**
 
-An agent-skill toolkit for AI assistants that carries a deck from requirement research through outlining, production and revision, and delivers editable PPTX or HTML presentations.
+An **orchestration-only** agent skill: it turns a presentation request into a confirmed page-by-page plan, then routes production to one of four external production skills that build editable PPTX or HTML.
 
-**PPT Agent Kit** bundles five agent skills and works in any AI tool that supports Agent Skills, such as ZCode or Claude Code. Describe a topic, supply materials, or request changes in natural language; the assistant researches the requirement, plans and confirms the outline, then calls the right production skill to build and verify the deck.
+> This repository ships no production engine. `ppt-master`, `gorden-ppt-skill`, `html-ppt` and `guizang-ppt-skill` are separate dependencies. See [docs/install.md](docs/install.md) and [references/dependencies.md](references/dependencies.md).
 
-- **From topic to finished deck**: plan from scratch, build from an existing outline, or revise and beautify an existing PPTX.
-- **Several production routes**: corporate templates, free design, 21 built-in Chinese templates, plus conventional, magazine-style and Swiss-style web decks.
-- **Two output formats**: editable PowerPoint (`.pptx`) or an HTML web deck, chosen per request.
-- **One orchestrated workflow**: `ppt-planner-maker` runs the process by default and archives requirements, confirmed drafts, source material and deliverables per task; once familiar with the flow you can call a production skill directly.
+## What it does
 
-Clone the repository, open the project folder in an AI tool that supports Agent Skills, and follow the steps below. Model calls and some enhanced features need network access; documents and deliverables are generated and saved locally.
+- **Three entries**: plan an outline from a topic, build from an existing outline or source material, or edit/beautify an existing PPTX.
+- **Staged confirmation**: requirements, narrative and the page-by-page outline/edit plan are shown in full before they are written; engine-internal artifacts go straight to the project workspace.
+- **Orchestration only**: it does not draw slides or build decks. It hands the confirmed plan and constraints to the selected production skill, then checks the handoff and the deliverable.
+- **Resolvable dependencies**: routing uses logical IDs; `scripts/resolve_skills.py` resolves physical roots. A missing dependency stops the branch with an install command instead of silently switching routes.
+- **Portable**: the repository root is the skill, so a clone or symlink into a scanned skills root is enough. Runtime artifacts go to the user workspace, never into the skill package.
 
-> ⚠️ **Before commercial use**: the original parts of this repository (`ppt-planner-maker`, the root documents and `tests/`) are licensed **CC BY-NC 4.0 — no commercial use**; the built-in templates and assets of `gorden-ppt-skill` are non-commercial as well. Other third-party components follow their own licenses: `ppt-master` and `html-ppt` are MIT, `guizang-ppt-skill` is AGPL-3.0. See [License and commercial scope](#license-and-commercial-scope), [`LICENSE`](LICENSE) and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+## Install
 
-> This file is the English translation of [`README.md`](README.md). The Chinese README is the default, and the license files take precedence over any wording here.
+### 1. Install this skill
 
-## [Experienced users] Pick a skill first (recommended reading)
-
-**Recommended: if you already know your way around, call a skill manually.** Skip the default research-and-planning orchestration and issue a single production request — this is the fastest route.
-
-Typical cases:
-
-| Scenario / requirement | Recommended skill | Output format |
-|---|---|---|
-| Strictly apply a corporate template (China Electronics Cloud, China Telecom, CATARC, …) | `skills\ppt-master` | Editable PPTX |
-| Free-form PPTX design (default for commercial or corporate use), or revise / beautify an existing PPTX | `skills\ppt-master` | Editable PPTX |
-| Personal study or research using the built-in Chinese templates (21 elaborate / minimal templates, non-commercial) | `skills\gorden-ppt-skill` | Editable PPTX |
-| Reporting, slide-like decks, conventional presentations | `skills\html-ppt` | HTML |
-| Magazine style, Swiss style, design-led decks, talks and sharing sessions | `skills\guizang-ppt-skill` | HTML |
-
-If you have no strong preference, just describe the requirement in natural language. As agreed in `AGENTS.md`, the project runs `skills\ppt-planner-maker` by default: it researches the requirement, plans the outline or revision, routes the job to the appropriate production skill above, and drives the build.
-
-A few constraints:
-
-- **Strict corporate templates only produce editable PPTX**, never HTML at the same time; when the two conflict, the workflow asks you to adjust one of the requirements.
-- The built-in templates and assets of `gorden-ppt-skill` are **for personal study and research only — no commercial use**. For commercial decks, client proposals or internal business reporting, switch to `ppt-master` free design or a corporate template.
-- HTML is a web presentation, not PowerPoint. Do not rename an HTML file to `.pptx`.
-
-### Example production requests
-
-**Free-form PPTX (ppt-master)**
-
-```text
-Use the skills\ppt-master skill.
-Read the source file `references\TREMAC与可信数据空间技术融合探索_10页发言稿.md` and generate a presentation that can be projected as-is, based on its full content.
-Keep the overall style clean, professional and premium: white background with a tech-blue palette, hex #0058FF.
-Write the final file to the /output directory and name it: TREMAC与可信数据空间技术融合探索_qoder+ds41flash+pptmatster.pptx
-```
-
-**Magazine-style / design-led HTML (guizang-ppt-skill)**
-
-```text
-Use the skills\guizang-ppt-skill skill.
-Read the source file `references\TREMAC与可信数据空间技术融合探索_10页发言稿.md` and generate a presentation that can be projected as-is, based on its full content.
-Keep the overall style clean, professional and premium: white background with a tech-blue palette, hex #0058FF.
-Write the final file to the /output directory and name it: TREMAC与可信数据空间技术融合探索_wb+minimax31+guizang
-```
-
-**Corporate template PPTX (ppt-master + China Electronics Cloud deck)**
-
-```text
-Use the skills\ppt-master skill
-and the skills\ppt-master\templates\decks\中国电子云 deck template.
-Read the source file `references\TREMAC与可信数据空间技术融合探索_10页发言稿.md` and generate a presentation that can be projected as-is, based on its full content.
-Keep the overall style clean, professional and premium.
-Write the final file to the /output directory and name it: TREMAC与可信数据空间技术融合探索_中国电子云_qoder+ds41flash+pptmatster.pptx
-```
-
-**Elaborate, high-end PPTX (gorden-ppt-skill)**
-
-```text
-Use the skills\gorden-ppt-skill skill.
-Read the source file `references\TREMAC与可信数据空间技术融合探索_10页发言稿.md` and generate a presentation based on its full content.
-Make the deck elaborate, high-end, professional and premium: white background with a tech-blue palette, hex #0058FF.
-Write the final file to the /output directory and name it: TREMAC与可信数据空间技术融合探索_qoder+ds41flash+gordenppt豪华蓝.pptx
-```
-
-The output directory, file name and source file are all replaceable; for the HTML routes it is a good idea to append an explicit `.html` extension to the file name.
-
-## [General users] Quick start
-
-### 1. Prepare the environment
-
-Clone the repository and open the `ppt-agent-kit` folder in your AI tool:
+DSH user scope (recommended):
 
 ```bash
-git clone https://github.com/xztsummer/ppt-agent-kit.git
-cd ppt-agent-kit
+git clone https://github.com/xztsummer/ppt-planner-maker.git ~/.dsh/skills/ppt-planner-maker
 ```
 
-Requirements:
+Project scope on Windows (directory junction, no admin required):
 
-- An AI tool that supports Agent Skills (ZCode, Claude Code, Cursor, …)
-- Python 3.10+ (runs the production scripts of `ppt-master` and `gorden-ppt-skill`)
-- Node.js 18+ (optional; used by the presenter mode and Swiss deck validation scripts of guizang)
-- Google Chrome (optional; renders HTML pages to PNG for visual checks)
+```bat
+mklink /J "<workspace>\.dsh\skills\ppt-planner-maker" "D:\path\to\ppt-planner-maker"
+```
 
-### 2. Install dependencies
+Project scope on macOS / Linux:
 
 ```bash
-pip install -r skills/ppt-master/requirements.txt
+ln -s /path/to/ppt-planner-maker <workspace>/.dsh/skills/ppt-planner-maker
 ```
 
-Most scripts in `ppt-master` only use the standard library; the dependencies above enable SVG-to-PPTX conversion, PDF/Word/Excel parsing, AI image generation, narration audio and other enhanced features. The `python-pptx` package required by `gorden-ppt-skill` is included as well.
+DSH discovers skills one level deep: `<root>/<name>/SKILL.md`. Do not wrap this repository in another `skills/` directory. Claude Code and other hosts follow the same rule for their own skills roots.
 
-### 3. Drop in source material (optional)
+### 2. Install production dependencies
 
-Put reference documents, old decks, images and so on into `references/`, then simply mention the file name in the conversation. Source material is used read-only and never overwritten.
+Install at least the dependencies for the branches you use; installing all four is fine. `<skills-dir>` is any skills root scanned by your host.
 
-### 4. Ask the assistant
+```bash
+# Branches A / B / F; branch A requires this fork for the company decks
+git clone https://github.com/xztsummer/ppt-master.git <skills-dir>/ppt-master
+
+# Branch C
+git clone https://github.com/GordenSun/GordenPPTSkill.git <skills-dir>/gorden-ppt-skill
+
+# Branch D
+git clone https://github.com/lewislulu/html-ppt-skill.git <skills-dir>/html-ppt
+
+# Branch E
+git clone https://github.com/op7418/guizang-ppt-skill.git <skills-dir>/guizang-ppt-skill
+```
+
+You can also keep dependencies in a custom directory and point the resolver at it:
+
+```bash
+# Windows PowerShell
+$env:PPT_PLANNER_SKILLS_DIR = "D:\path\to\ppt-skills"
+# macOS / Linux
+export PPT_PLANNER_SKILLS_DIR="$HOME/path/to/ppt-skills"
+```
+
+### 3. Verify
+
+```bash
+python scripts/resolve_skills.py --check --branches A,B,C,D,E,F
+```
+
+Every dependency should report `OK`. On Windows, use `python` if `python3` opens the Microsoft Store stub. Missing items print an install command; see [references/dependencies.md](references/dependencies.md) for details.
+
+## Quick start
 
 Default flow (recommended for a first run):
 
-> Build a 15-slide deck on "Trusted Data Space" for a client audience, 30-minute talk, professional and clean style.
+> Make a 15-page presentation on "trusted data spaces" for a customer audience, 30 minutes, professional and concise.
 
-Calling a skill manually:
+Three entries:
 
-> Use ppt-master, strictly apply the China Electronics Cloud corporate template, and turn `references/方案.docx` into a 20-slide business deck.
+- **① Plan an outline**: start from a topic or scattered material; research, align on the narrative, then plan page by page.
+- **② Build from an existing outline**: keep the original order and meaning, fill page-level gaps, then produce. PDFs, screenshots and old PPTX files can be treated as source material.
+- **③ Edit/beautify an existing PPTX**: either edit in place, or keep the content and redesign the visuals. The source file is never overwritten.
 
-> Use guizang-ppt-skill to make a magazine-style web deck about "AI and design" for an offline talk.
+Outline only:
 
-> Use html-ppt to make an 8-slide technical sharing deck in a white-background tech-blue style.
+> Give me a page-by-page outline first; do not build the deck.
 
-### 5. Confirm and generate
+If you are in a hurry, explicitly authorize a fast mode:
 
-The default flow **shows the full content in the conversation** stage by stage; documents are written to disk only after you confirm, before the next stage begins:
+> One confirmation is enough.
 
-1. Confirm the requirement (topic, audience, duration, template requirements, output format, visual style)
-2. Confirm the plan (narrative spine, sections, page count, time allocation; skipped when you already have an outline or are revising an existing PPTX)
-3. Confirm the outline or revision plan page by page (title, conclusion, content and presentation notes per page, or a page-by-page change list)
-4. Automatic routing to the production skill, build and verification
+> Skip confirmation and build it.
 
-### 6. Collect the deliverable
+Fast mode still resolves dependencies, shows the gorden license notice, runs downstream blocking checks and verifies the deliverable. The topic still has to come from you, and missing data is never invented. See [references/confirmation.md](references/confirmation.md).
 
-Everything is archived under `projects/` as `YYYYMMDDHHmm_主题名/`, with the deliverable named after the directory:
+## Routing summary
+
+| Branch | Scenario | Production skill | Output |
+|---|---|---|---|
+| A | Company template required | `ppt-master` | Editable PPTX |
+| B | No company template, professional and concise | `ppt-master` | Editable PPTX |
+| C | No company template, rich and elaborate (default density) | `gorden-ppt-skill` | Editable PPTX |
+| D | Regular HTML | `html-ppt` | HTML |
+| E | Magazine / Swiss-style or explicit design intent | `guizang-ppt-skill` | HTML |
+| F | Edit/beautify an existing PPTX | `ppt-master` | Editable PPTX |
+
+The authoritative rules live in [SKILL.md](SKILL.md) §4; the table above is a summary.
+
+Hard constraints:
+
+- **A company template produces editable PPTX only.** If the user explicitly requires both a company template and HTML, ask them to change one requirement; do not silently rewrite it.
+- **gorden built-in templates are non-commercial.** Branch C adds a license notice to the requirements table; obtain the template author's permission before commercial use.
+- **guizang triggers only on real style intent.** Negations, design words quoted from source material, "rich and elaborate", or "premium/nice" alone do not trigger it.
+- **HTML is not PowerPoint.** Do not rename HTML to `.pptx`, and do not claim it is editable.
+- **A missing dependency stops the branch.** Report the ID, missing capability and install command; never guess a path or switch production skills.
+
+## Dependency resolution
+
+Production skills are not bundled. Before production, run:
+
+```bash
+python scripts/resolve_skills.py --workspace <workspace> --branches <selected branches> --json
+```
+
+Root precedence (first hit wins):
+
+1. `--skills-dir` / `PPT_PLANNER_SKILLS_DIR`
+2. `<workspace>/.dsh/skills`
+3. `<workspace>/.agents/skills`
+4. `<workspace>/skills` (legacy layout)
+5. `~/.dsh/skills`
+6. `~/.agents/skills`
+7. `~/.claude/skills`
+
+The resolver also probes capabilities. Branch A, for example, requires `ppt-master`'s `templates/decks/中国电子云`; a directory without it is reported as `incomplete`, not usable. The full catalog and manual fallback are in [references/dependencies.md](references/dependencies.md).
+
+## Workspace and artifacts
+
+The target workspace defaults to the current session directory; an explicit user choice wins. **The skill package is read-only**; task artifacts never go into this repository.
 
 ```text
-projects/202610220848_可信数据空间/
-├── 需求调研.md
-├── PPT规划思路.md                     # entry ①
-├── PPT详细大纲_确认版.md               # entries ①②
-├── 修改方案_确认版.md                  # entry ③
-├── sources/                           # read-only copies of user material (original file names)
-├── versions/                          # history of confirmed drafts
-├── _draft/                            # optional: unconfirmed drafts
-├── 202610220848_可信数据空间.pptx     # PPTX route
-├── 202610220848_可信数据空间.html     # HTML route; both delivered when dual format is requested
-├── assets/ or images/                 # local HTML resources, if any
-└── _build/<skill 名>/                 # build workspace and intermediates (render previews, validation reports)
+<workspace>/
+└── projects/YYYYMMDDHHmm_topic/
+    ├── 需求调研.md                    # requirements research
+    ├── PPT规划思路.md                 # entry 1
+    ├── PPT详细大纲_确认版.md           # entries 1 and 2
+    ├── 修改方案_确认版.md              # entry 3
+    ├── sources/                       # read-only copies of user material
+    ├── versions/                      # confirmed-plan history
+    ├── _draft/                        # optional unconfirmed drafts
+    ├── YYYYMMDDHHmm_topic.pptx        # PPTX branch
+    ├── YYYYMMDDHHmm_topic.html        # HTML branch
+    ├── assets/ or images/             # local HTML assets
+    └── _build/<skill-name>/           # production workspace and logs
 ```
+
+If the current directory is the skill root (it contains `SKILL.md`), the orchestrator asks for a workspace instead of creating `projects/` inside the package.
 
 ## Repository layout
 
 ```text
-ppt-agent-kit/
-├── AGENTS.md                  # default routing when no skill is named
-├── README.md                  # Chinese (default)
-├── README.en.md               # English
-├── LICENSE                    # license for the original parts: CC BY-NC 4.0 (non-commercial)
-├── THIRD_PARTY_NOTICES.md     # licenses and commercial limits of the third-party skills
-├── skills/
-│   ├── ppt-planner-maker/     # orchestration: research → outline/revision plan → confirm → build (default)
-│   ├── ppt-master/            # PPTX: corporate templates / free design / template extraction / beautify
-│   ├── gorden-ppt-skill/      # PPTX: 21 built-in Chinese templates
-│   ├── html-ppt/              # HTML: 36 themes, 36 layouts, presenter mode
-│   └── guizang-ppt-skill/     # HTML: e-magazine / Swiss International Style
-├── references/                # your reference material
-├── projects/                  # documents and deliverables archived per task
-└── 【只读】不同模型+skill组合效果示例/   # sample outputs from the same topic under different model+skill combos
+ppt-planner-maker/
+├── SKILL.md                 # runtime entry and routing table
+├── references/
+│   ├── intake.md            # requirements research
+│   ├── planning.md          # narrative and page planning
+│   ├── edit.md              # edit/beautify an existing PPTX
+│   ├── production.md        # branches A–F playbooks
+│   ├── confirmation.md      # confirmation, fast mode, post-delivery edits
+│   └── dependencies.md      # external dependency install, resolution, licenses
+├── scripts/
+│   ├── deps.json            # machine-readable dependency catalog
+│   └── resolve_skills.py    # dependency root/capability resolver
+├── docs/
+│   ├── install.md           # install and host discovery
+│   ├── migration.md         # migrate from 0.9 and the old workspace layout
+│   └── design.md            # maintainers: single source of truth and extension
+├── tests/                   # Python unit tests
+├── README.md / README.en.md
+├── AGENTS.md                # repository development conventions
+├── VERSION / CHANGELOG.md
+├── LICENSE                  # CC BY-NC 4.0 for original parts
+└── THIRD_PARTY_NOTICES.md   # external dependency license matrix
 ```
 
-## Skill capabilities at a glance
+`evals/` is a local routing evaluation directory and is not distributed with the repository; see [docs/design.md](docs/design.md).
 
-### ppt-master
+## Development and verification
 
-Native editable PPTX workflow, suited to corporate templates and formal business settings. Five routes:
+```bash
+# Static checks: frontmatter, relative links, routing consistency, forbidden paths
+python scripts/check_skill.py
 
-- **Generate PPTX**: build a new deck from material or a topic, with an "elaborate / premium" or "professional / clean" preference
-- **Beautify**: 1:1 visual upgrade of an existing PPTX without changing its content structure
-- **Image to PPTX**: rebuild page images as editable objects
-- **Create Template**: extract reusable Brand / Style / Layout / Deck templates from PPTX files, images or brand assets
-- **Edit Native PPTX**: fill new content into an existing `.pptx`, leaving untouched pages byte-for-byte identical
+# Unit tests for the resolver and the checker
+python -m unittest discover -s tests
+```
 
-`templates/decks/` ships corporate templates for China Electronics Cloud, China Telecom, CATARC and others. Output uses native shapes, charts, tables, formulas and master inheritance rather than full-page screenshots. Dependencies live in `skills/ppt-master/requirements.txt`; an attribution check script runs before first use.
-
-### gorden-ppt-skill
-
-Ships **21 Chinese PPT templates** covering work reports, year-end reviews, promotion defenses, project retrospectives, thesis proposals, business proposals, teaching material and data visualization. The core capability is **replacing text only, without disturbing the original layout, palette or font sizes**, backed by text-box overflow detection and same-level heading size consistency checks; original minimal layouts are also supported.
-
-On first use the skill runs `python3 scripts/apply_update.py` for an incremental update; on Windows, use `python` if `python3` is unavailable. **Note: the non-commercial restriction applies only to its built-in templates and assets — the code is MIT.**
-
-### html-ppt
-
-Pure static HTML presentations, no build step:
-
-- 36 themes, 15 full decks, 36 page layouts, 47 animations (27 CSS + 20 Canvas FX)
-- Keyboard paging, touch swipe, presenter mode on the `S` key (current slide / next slide / speaker notes / timer)
-- Single-file HTML, fonts from CDN with system-font fallback when offline
-- Bundled headless Chrome screenshot script (`scripts/render.sh` — the Chrome path is hard-coded for macOS and needs adjusting on Windows)
-
-Suited to reporting, technical sharing, product introductions and other slide-like scenarios.
-
-### guizang-ppt-skill
-
-Single-file horizontal-paging HTML deck with two visual directions:
-
-- **E-magazine × e-ink**: serif headlines, WebGL fluid/contour backgrounds, warm tones — for humanities talks, industry observations and product launches
-- **Swiss International Style**: sans-serif type, grid dot patterns, high-contrast functional colours (IKB blue / lemon yellow / lime green / safety orange) — for tech products, data reporting and design-engineering talks
-
-Supports presenter view, synced audience screen, speaker notes, section covers, big-number statements, laser pointer and annotation. Suited to offline talks, launches, demo days and other talk formats with a strong personal style; heavy tables and dense training content are not a good fit.
-
-## The default workflow
-
-`skills\ppt-planner-maker` is the orchestration skill. It does not draw pages itself; it turns "an idea" into an executable production task. Three entry points:
-
-- **Entry ①: plan a deck outline** — start from a topic, research the requirement, align on the approach, plan page by page, build after confirmation
-- **Entry ②: ready outline, build directly** — keep the original order and intent of your outline, fill in the per-page production details, then build
-- **Entry ③: revise / beautify an existing PPTX** — incrementally edit while preserving the original layout, or redesign the layout while preserving the content; the source file is never overwritten
-
-The process follows staged confirmation: requirement, plan and page-by-page outline/revision documents are shown in full in the conversation and only written to disk after you explicitly confirm; internal spec files, SVGs, build logs and validation reports are written straight into the project workspace and summarised at the end of each stage. The confirmed outline/revision plan is the single source of truth for content changes; for entry ③ any page not listed in the change list follows the source deck. The production stage may tighten wording and split text into levels, but must not drop conclusions, data or constraints, nor silently change page count or order.
-
-When time is short you can explicitly authorise **fast mode**: "one confirmation is enough" merges requirement, approach and outline into a single confirmation; "no confirmation, just build" lets the assistant complete the requirement and outline and build straight away (you still provide the topic, and missing data is never invented). After delivery, typos, wording and positioning are fixed and rebuilt directly; substantive changes to conclusions, data or page count go back through confirmation. See `skills\ppt-planner-maker\references\confirmation.md`.
-
-Routing rules (consistent with the recommendation table above):
-
-| Corporate template | Output format / use | Production skill |
-|---|---|---|
-| Yes | Editable PPTX | `ppt-master` (corporate deck template) |
-| No | Editable PPTX, commercial or corporate business (the default when unspecified) | `ppt-master` (free design) |
-| No | Editable PPTX, personal study or research within the license | `gorden-ppt-skill` |
-| No | HTML, explicitly magazine / Swiss / editorial / design-led | `guizang-ppt-skill` |
-| No | HTML, anything else | `html-ppt` |
-
-Entry ③ (revise / beautify an existing PPTX) always outputs editable PPTX through `ppt-master`'s Edit Native PPTX or Beautify; a major structural change or a different output format moves the job to entry ②.
-
-Before delivery the deck is checked according to its format: for PPTX, page count, text editability and render layout; for HTML, paging, resource loading, palette and presenter view in a real browser.
-
-## Examples
-
-`【只读】不同模型+skill组合效果示例/` holds outputs for one topic (TREMAC and trusted data space technology convergence) produced by different model and skill combinations: `ppt-master` with and without a corporate template, `gorden-ppt-skill`, `html-ppt`, `guizang-ppt-skill`, in both HTML and PPTX. Use it to compare options when choosing a route.
-
-That directory is a read-only reference — please do not modify or delete its files.
+When routing changes, follow the sync checklist in [docs/design.md](docs/design.md): update `SKILL.md`, `production.md`, the README summary and local `evals/cases.md`, then run the checks above. CI is optional; the repository uses only the Python standard library.
 
 ## FAQ
 
-**I must use a corporate template but also want an HTML deck?** The workflow flags the conflict. The corporate-template route only produces editable PPTX, so one of the two requirements has to change.
+**The skill is not discovered after cloning.** It is not inside a scanned skills root. Put it at `~/.dsh/skills/ppt-planner-maker`, or create a junction/symlink at `<workspace>/.dsh/skills/ppt-planner-maker`. DSH scans one level only.
 
-**Can I send the generated HTML to someone else?** Yes, but ship the project's `assets/` or `images/` folders with it and keep relative paths intact. If CDN fonts or external icons are used, verify real offline playback by actually disconnecting the network before presenting.
+**A dependency is reported missing.** Run `python scripts/resolve_skills.py --workspace <workspace> --branches A` and install what it prints, or pass an existing dependency directory via `--skills-dir` / `PPT_PLANNER_SKILLS_DIR`. Do not guess paths.
 
-**Why does `python3` do nothing on Windows?** Windows may only provide the `python` command, or `python3` may point to the Microsoft Store stub. Use `python` instead.
+**`python3` does nothing on Windows.** Use `python`; `python3` may be the Microsoft Store stub.
 
-**A temporary PowerShell script fails on a Windows path containing Chinese characters?** Windows PowerShell 5.1 reads a BOM-less UTF-8 `.ps1` as the system ANSI code page (GBK on Chinese Windows). The path may be misdecoded, sometimes swallowing the `\` separator and creating a mojibake directory. Save temporary scripts as UTF-8 with BOM, or use Python / `-EncodedCommand`. The project's Python pipeline is unaffected.
+**Can I send the generated HTML to someone?** Yes, but include the project's `assets/` or `images/` and keep relative paths. If it uses CDN fonts or icons, test offline playback before promising it works offline.
 
-**Can I edit the sample files in the project?** `【只读】不同模型+skill组合效果示例/` is a read-only sample set; keep your own deliverables under `projects/`.
+**I need a company template and HTML.** That is a conflict. The company-template route produces editable PPTX only; one requirement has to change.
 
-## License and commercial scope
+**Do old `skills\ppt-master` prompts still work?** Not recommended. Dependencies are external now; install them and use skill names. See [docs/migration.md](docs/migration.md).
 
-Licensing is layered: **the original parts are non-commercial, third-party components follow their own licenses**. Before publishing or using anything commercially, check each item:
+**Can I commit `projects/` or deliverables back into the repository?** Please don't. The repository is the skill package; keep runtime artifacts in the workspace. `.gitignore` already excludes them.
 
-| Component | License / source | Commercial use |
+## License
+
+Original parts of this repository (`SKILL.md`, `references/`, `scripts/`, `docs/`, `tests/` and root documents) are licensed under [CC BY-NC 4.0](LICENSE): personal study, research, teaching and non-commercial exchange are allowed; **commercial use is prohibited** without prior written permission.
+
+External production skills are **not distributed** with this repository and keep their own licenses:
+
+| Dependency | License | Commercial use |
 |---|---|---|
-| `skills/ppt-master` | MIT, Copyright (c) 2025-2026 Hugo He | Allowed; keep the copyright notice and the `LICENSE` / `SPONSORS*.md` files |
-| `skills/html-ppt` | MIT, Copyright (c) 2026 lewis | Allowed; keep the copyright notice |
-| `skills/guizang-ppt-skill` | AGPL-3.0, © 2026 op7418 | Allowed; if you modify and distribute it, or offer it as a network service, you must publish the corresponding source under the AGPL |
-| `skills/gorden-ppt-skill` scripts, `references/` and metadata | MIT, Copyright (c) 2026 GordenSun | Allowed |
-| `.pptx` files and template preview images under `skills/gorden-ppt-skill/templates/` | Copyright of the third-party template authors, non-commercial (see `NOTICE.md`) | **Not allowed**; personal study and research only |
-| `skills/ppt-planner-maker/`, the root documents and `tests/` | CC BY-NC 4.0, Copyright (c) 2026 xztsummer (see `LICENSE`) | **No commercial use**; non-commercial use requires attribution and a link to the license |
+| `ppt-master` (including company decks) | MIT | Allowed; company logos/trademarks are not granted by MIT |
+| `gorden-ppt-skill` code | MIT | Allowed |
+| `gorden-ppt-skill` templates/assets | Non-commercial | **Prohibited**; personal study/research only |
+| `html-ppt` | MIT | Allowed |
+| `guizang-ppt-skill` | AGPL-3.0 | Allowed; modified distribution or network use requires source disclosure |
 
-Full terms: [`LICENSE`](LICENSE) (original parts) and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) (third-party components).
+Commercial self-check:
 
-Notes on "non-commercial":
-
-- **The non-commercial restriction on the original parts comes from the root `LICENSE`**: `ppt-planner-maker`, the root README/AGENTS documents and `tests/` are CC BY-NC 4.0, and commercial use requires separate written permission. That license does not affect the third-party skills under `skills/`.
-- **Do not add "non-commercial" terms to MIT / AGPL components**: MIT explicitly permits commercial use, and AGPL-3.0 permits it too (with source-disclosure obligations). Writing "non-commercial" on top of upstream code is inconsistent with the upstream license and will conflict on redistribution.
-- **When redistributing this repository**: keep the `LICENSE`, `NOTICE.md`, `SPONSORS*.md` files and copyright notices in each directory — do not remove or rewrite them. The root `LICENSE` and `THIRD_PARTY_NOTICES.md` should be kept as well.
-- **`gorden-ppt-skill` has two sets of terms**: its `LICENSE` states at the end that MIT covers the code only, with templates covered separately by `NOTICE.md`. Do not describe the whole skill as "non-commercial" in documentation.
-
-### Commercial self-check
-
-| Your usage | Verdict |
+| Your use | Verdict |
 |---|---|
-| Client proposals, sales material or internal business reporting with a corporate template or `ppt-master` free design | Allowed (MIT) |
-| Any of the above using the 21 built-in templates of `gorden-ppt-skill` | **Not allowed**; use `ppt-master` or a corporate template instead |
-| Commercial launches or product intros with `guizang-ppt-skill` / `html-ppt` | Allowed; but redistributing or modifying the skill itself must follow AGPL / MIT |
-| Paid courses, paid products/services or client delivery using `ppt-planner-maker`, these documents or `tests/` | **Not allowed** (CC BY-NC 4.0); written permission from the maintainer is required |
-| Non-commercial sharing, teaching or research with attribution | Allowed; credit the source and link to the CC BY-NC 4.0 license |
-| Selling this repository as a bundle, a paid SaaS, or a bonus in a paid course | Check item by item: the original parts are non-commercial (CC BY-NC 4.0), MIT parts must retain notices, AGPL parts must be open-sourced, and the `gorden-ppt-skill` templates must not be included |
+| Use this skill for paid client work, paid products or courses | **Not allowed** (CC BY-NC 4.0); written permission required |
+| Use `ppt-master` / `html-ppt` to build a commercial deck | Allowed (MIT); keep copyright notices |
+| Use `gorden-ppt-skill` built-in templates for a commercial deck | **Not allowed**; personal study/research only |
+| Use `guizang-ppt-skill` for a commercial deck | Allowed; follow AGPL when distributing modifications |
+| Sell this repository or run it as a paid SaaS | **Not allowed**; check dependencies separately |
 
-> The above describes usage, not legal advice. Before commercial use, defer to the root `LICENSE`, `THIRD_PARTY_NOTICES.md` and the license texts in each component directory, and note that third-party assets bundled with `ppt-master` (icons, sound effects, etc.) may carry their own licenses.
+See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the full terms. This is not legal advice; consult the original licenses before commercial use.
+
+## Upstream and credits
+
+- [hugohe3/ppt-master](https://github.com/hugohe3/ppt-master) (MIT) and [xztsummer/ppt-master](https://github.com/xztsummer/ppt-master) (customized fork)
+- [GordenSun/GordenPPTSkill](https://github.com/GordenSun/GordenPPTSkill)
+- [lewislulu/html-ppt-skill](https://github.com/lewislulu/html-ppt-skill)
+- [op7418/guizang-ppt-skill](https://github.com/op7418/guizang-ppt-skill)
+
+This repository maintains only the orchestration layer; production capabilities, templates and assets belong to their respective upstream authors.
