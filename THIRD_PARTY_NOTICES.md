@@ -19,4 +19,4 @@
 
 ## 本仓库原创部分
 
-`README.md`、`AGENTS.md`、`skills/ppt-planner-maker/`、`tests/` 及根目录文档由维护者原创，采用 CC BY-NC 4.0，详见根目录 [`LICENSE`](./LICENSE)。
+`README.md`、`AGENTS.md`、`skills/ppt-planner-maker/` 及根目录文档由维护者原创，采用 CC BY-NC 4.0，详见根目录 [`LICENSE`](./LICENSE)。

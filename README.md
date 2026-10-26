@@ -250,6 +250,8 @@ ppt-agent-kit/
 
 **为什么 Windows 上 `python3` 没反应？** Windows 可能只有 `python` 命令，或 `python3` 指向 Microsoft Store 的占位程序。改用 `python` 即可。
 
+**Windows 中文路径下临时 PowerShell 脚本报“路径不存在”？** 无 BOM 的 UTF-8 `.ps1` 会被 Windows PowerShell 5.1 按系统 ANSI（中文环境为 GBK）读取，中文路径可能被误解析，甚至吞掉 `\` 并生成乱码目录。临时脚本请保存为 UTF-8 with BOM，或改用 Python / `-EncodedCommand`。项目自身的 Python 制作流程不受影响。
+
 **项目里的示例文件能改吗？** `【只读】不同模型+skill组合效果示例/` 是只读样例；自己的成品放在 `projects/` 下。
 
 ## 许可与商用范围

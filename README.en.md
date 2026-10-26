@@ -252,6 +252,8 @@ That directory is a read-only reference — please do not modify or delete its f
 
 **Why does `python3` do nothing on Windows?** Windows may only provide the `python` command, or `python3` may point to the Microsoft Store stub. Use `python` instead.
 
+**A temporary PowerShell script fails on a Windows path containing Chinese characters?** Windows PowerShell 5.1 reads a BOM-less UTF-8 `.ps1` as the system ANSI code page (GBK on Chinese Windows). The path may be misdecoded, sometimes swallowing the `\` separator and creating a mojibake directory. Save temporary scripts as UTF-8 with BOM, or use Python / `-EncodedCommand`. The project's Python pipeline is unaffected.
+
 **Can I edit the sample files in the project?** `【只读】不同模型+skill组合效果示例/` is a read-only sample set; keep your own deliverables under `projects/`.
 
 ## License and commercial scope
