@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "skillName": "ppt-planner-maker",
+  "description": "外部制作 Skill 清单。编排层只引用 id，不写物理路径；路径由 resolve_skills.py 解析。",
+  "installRootHint": "<skills-dir> 指本机任一被宿主扫描的 skills 根目录，例如 ~/.dsh/skills 或 <workspace>/.dsh/skills。",
+  "skills": [
+    {
+      "id": "ppt-master",
+      "title": "PPTX 引擎：公司模板 / 自由设计 / 原生编辑 / 美化",
+      "source": "https://github.com/xztsummer/ppt-master",
+      "sourceNote": "hugohe3/ppt-master v6.7.2 的定制 fork，含中国电子云、中国电信、中汽研 deck；分支 A 必须使用此 fork。",
+      "license": "MIT",
+      "testedVersion": "0e8d92c4e54b037b2b677f4fcaf3b01b63d38316（fork main，2026-10-21）",
+      "branches": ["A", "B", "F"],
+      "capabilities": {
+        "skill": { "path": "SKILL.md", "required": true },
+        "routing": { "path": "workflows/routing.md", "required": true },
+        "scripts": { "path": "scripts", "required": true },
+        "decks": { "path": "templates/decks", "required": false },
+        "deck:中国电子云": { "path": "templates/decks/中国电子云", "required": false, "for": ["A"] }
+      },
+      "install": {
+        "type": "git",
+        "url": "https://github.com/xztsummer/ppt-master.git",
+        "targetName": "ppt-master"
+      }
+    },
+    {
+      "id": "gorden-ppt-skill",
+      "title": "中文内置模板 PPTX（复杂豪华）",
+      "source": "https://github.com/GordenSun/GordenPPTSkill",
+      "sourceNote": "内置模板与预览素材为非商业许可，见其 NOTICE.md；代码为 MIT。",
+      "license": "MIT（代码）/ 非商业（内置模板）",
+      "testedVersion": "1.0.20（7d4a61cbd8363b92e4a30784f8ca460a0a2b0a33，2026-06-22）",
+      "branches": ["C"],
+      "capabilities": {
+        "skill": { "path": "SKILL.md", "required": true },
+        "manifest": { "path": "manifest.json", "required": true },
+        "templates": { "path": "templates", "required": true },
+        "template-index": { "path": "templates/INDEX.md", "required": true },
+        "build-script": { "path": "scripts/build_pptx.py", "required": true },
+        "version": { "path": "VERSION", "required": false }
+      },
+      "install": {
+        "type": "git",
+        "url": "https://github.com/GordenSun/GordenPPTSkill.git",
+        "targetName": "gorden-ppt-skill"
+      }
+    },
+    {
+      "id": "html-ppt",
+      "title": "常规 HTML 演示文稿",
+      "source": "https://github.com/lewislulu/html-ppt-skill",
+      "license": "MIT",
+      "testedVersion": "fd1629067909ff55b36b905476de4e5f26062a1f（main，2026-09-14）",
+      "branches": ["D"],
+      "capabilities": {
+        "skill": { "path": "SKILL.md", "required": true },
+        "themes": { "path": "assets/themes", "required": true },
+        "templates": { "path": "templates", "required": true },
+        "references": { "path": "references", "required": false },
+        "scripts": { "path": "scripts", "required": false }
+      },
+      "install": {
+        "type": "git",
+        "url": "https://github.com/lewislulu/html-ppt-skill.git",
+        "targetName": "html-ppt"
+      }
+    },
+    {
+      "id": "guizang-ppt-skill",
+      "title": "杂志风 / 瑞士风 HTML 演示文稿",
+      "source": "https://github.com/op7418/guizang-ppt-skill",
+      "license": "AGPL-3.0",
+      "testedVersion": "c91369c449d34755d320a8b81d0734000d99d1ab（main，2026-08-07）",
+      "branches": ["E"],
+      "capabilities": {
+        "skill": { "path": "SKILL.md", "required": true },
+        "assets": { "path": "assets", "required": true },
+        "references": { "path": "references", "required": true },
+        "scripts": { "path": "scripts", "required": false }
+      },
+      "install": {
+        "type": "git",
+        "url": "https://github.com/op7418/guizang-ppt-skill.git",
+        "targetName": "guizang-ppt-skill"
+      }
+    }
+  ]
+}

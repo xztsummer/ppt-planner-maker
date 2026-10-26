@@ -8,3 +8,14 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+
+# 运行产物：写到目标工作区，不写入 Skill 包
+projects/
+output/
+_build/
+*.pptx
+*.html
+
+# 本地 Skill 挂载、评测用例与报告
+.dsh/
+evals/
