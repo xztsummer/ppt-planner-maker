@@ -19,6 +19,9 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Sequence, Set, Tuple
 
+# Keep the skill package free of __pycache__ when this checker imports the resolver.
+sys.dont_write_bytecode = True
+
 SKILL_NAME = "ppt-planner-maker"
 ROOT = Path(__file__).resolve().parent.parent
 SKILL_MD = ROOT / "SKILL.md"

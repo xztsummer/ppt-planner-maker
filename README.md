@@ -196,7 +196,7 @@ ppt-planner-maker/
 python scripts/check_skill.py
 
 # 解析器与自检的单元测试
-python -m unittest discover -s tests
+python -B -m unittest discover -s tests
 ```
 
 改路由时按 [docs/design.md](docs/design.md) 的同步清单更新 `SKILL.md`、`production.md`、README 和本地 `evals/cases.md`，再跑上面的检查。CI 可选；仓库不依赖第三方 Python 包。

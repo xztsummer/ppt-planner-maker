@@ -34,7 +34,7 @@
 
    ```bash
    python scripts/check_skill.py
-   python -m unittest discover -s tests
+   python -B -m unittest discover -s tests
    ```
 
 6. 干跑评测（见「五、评测」），把报告写到 `evals/reports/`。

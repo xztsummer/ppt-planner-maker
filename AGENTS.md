@@ -13,6 +13,6 @@
 
 ```bash
 python scripts/check_skill.py
-python -m unittest discover -s tests
+python -B -m unittest discover -s tests
 python scripts/resolve_skills.py --workspace <工作区> --branches A,F --json
 ```

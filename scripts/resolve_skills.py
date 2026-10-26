@@ -36,13 +36,14 @@ VALID_BRANCHES = tuple("ABCDEF")
 
 
 def _utf8_stdout() -> None:
-    """Best-effort UTF-8 stdout so Chinese paths survive Windows consoles."""
-    reconfigure = getattr(sys.stdout, "reconfigure", None)
-    if callable(reconfigure):
-        try:
-            reconfigure(encoding="utf-8", errors="replace")
-        except (OSError, ValueError):
-            pass
+    """Best-effort UTF-8 stdout/stderr so Chinese paths survive Windows consoles."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (OSError, ValueError):
+                pass
 
 
 def _split_list(value: Optional[str]) -> List[str]:

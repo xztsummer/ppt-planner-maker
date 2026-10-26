@@ -196,7 +196,7 @@ ppt-planner-maker/
 python scripts/check_skill.py
 
 # Unit tests for the resolver and the checker
-python -m unittest discover -s tests
+python -B -m unittest discover -s tests
 ```
 
 When routing changes, follow the sync checklist in [docs/design.md](docs/design.md): update `SKILL.md`, `production.md`, the README summary and local `evals/cases.md`, then run the checks above. CI is optional; the repository uses only the Python standard library.

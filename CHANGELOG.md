@@ -41,7 +41,7 @@
 ### Verification
 
 - `python scripts/check_skill.py`
-- `python -m unittest discover -s tests`
+- `python -B -m unittest discover -s tests`
 - 路由干跑：A–F 分支、冲突拦截、负向风格词、依赖缺失、只要大纲、工作区保护。
 - 真实端到端：至少一条公司模板 PPTX 或 HTML 分支，检查解析、交接与成品。
 
