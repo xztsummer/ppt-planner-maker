@@ -50,6 +50,11 @@ REQUIRED_FILES = [
     "references/production.md",
     "scripts/deps.json",
     "scripts/resolve_skills.py",
+    "scripts/check_runtime.py",
+    "scripts/doctor.py",
+    "scripts/setup.py",
+    "scripts/verify_deck.py",
+    "scripts/clean_deck.py",
     "scripts/check_skill.py",
     "docs/design.md",
     "docs/install.md",
@@ -63,7 +68,17 @@ BANNED_DEPENDENCY_PATHS = [
     "skills/html-ppt",
     "skills/guizang-ppt-skill",
 ]
-STALE_TERMS = ["使用性质"]
+STALE_TERMS = [
+    "使用性质",
+    "内容偏好",
+    "必须使用公司模板",
+    "只有一套就直接用",
+    "只是视觉密度，不决定分支",
+    "视觉密度只影响版式，不参与分支判断",
+    "视觉密度只影响版式，不改变分支",
+    "不以其原创模式承接本分支",
+    "不确定就选从零设计",
+]
 OLD_BRAND = "ppt-agent-kit"
 OLD_BRAND_EXEMPT = {"CHANGELOG.md", "migration.md"}
 
@@ -274,6 +289,8 @@ def check_dependency_catalog(errors: List[str], warnings: List[str]) -> Tuple[Di
             warnings.append(f"{skill['id']} 缺少 license")
         if not skill.get("testedVersion"):
             warnings.append(f"{skill['id']} 缺少 testedVersion")
+        if not isinstance(skill.get("runtime"), dict):
+            warnings.append(f"{skill['id']} 缺少 runtime 清单（check_runtime.py 无法检查）")
     return deps, dep_ids
 
 
@@ -350,6 +367,14 @@ def check_structure(errors: List[str], warnings: List[str]) -> None:
         if (ROOT / dirname).exists():
             warnings.append(f"仓库内出现运行目录 {dirname}/；产物应写到目标工作区")
 
+    for pycache in ROOT.rglob("__pycache__"):
+        if ".git" in pycache.parts:
+            continue
+        warnings.append(
+            f"仓库内出现字节码目录 {pycache.relative_to(ROOT)}；Skill 包应只读，"
+            "请清理并在运行脚本时设置 sys.dont_write_bytecode 或使用 python -B"
+        )
+
     for dirpath, dirnames, filenames in os.walk(ROOT):
         dirnames[:] = [
             name for name in dirnames
@@ -368,6 +393,10 @@ def check_evals(errors: List[str], warnings: List[str]) -> None:
     text = read_text(cases)
     if "使用性质" in text:
         warnings.append("evals/cases.md 仍提到“使用性质”，请同步新口径")
+    if "内容偏好" in text:
+        warnings.append("evals/cases.md 仍提到“内容偏好”，请改为制作路线 / 视觉密度")
+    if "必须使用公司模板" in text:
+        warnings.append("evals/cases.md 仍提到“必须使用公司模板”，请改为制作路线")
     for match in re.finditer(r"(?m)^\|\s*分支\s*\|\s*M\s*\|\s*([A-Za-z])\s*\|", text):
         if match.group(1).upper() not in BRANCHES:
             errors.append(f"evals/cases.md 出现非法分支：{match.group(1)}")

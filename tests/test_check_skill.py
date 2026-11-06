@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.dont_write_bytecode = True
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "scripts"))
 
-import check_skill  # noqa: E402
+import check_skill  # type: ignore  # noqa: E402
 
 
 class FrontmatterTests(unittest.TestCase):
@@ -61,7 +63,25 @@ class RepositoryTests(unittest.TestCase):
     def test_repository_passes_static_checks(self):
         errors, warnings = check_skill.run_checks()
         self.assertEqual(errors, [], msg="\n".join(errors))
-        self.assertEqual(warnings, [], msg="\n".join(warnings))
+        runtime_dir_warnings = {
+            f"仓库内出现运行目录 {name}/；产物应写到目标工作区"
+            for name in ("projects", "output", "_build")
+        }
+        unexpected = [item for item in warnings if item not in runtime_dir_warnings]
+        self.assertEqual(unexpected, [], msg="\n".join(unexpected))
+
+    def test_runtime_directory_warning_is_preserved(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "output").mkdir()
+            with mock.patch.object(check_skill, "ROOT", root):
+                errors, warnings = [], []
+                check_skill.check_structure(errors, warnings)
+            self.assertEqual(errors, [])
+            self.assertIn(
+                "仓库内出现运行目录 output/；产物应写到目标工作区", warnings
+            )
+            self.assertTrue((root / "output").is_dir())
 
 
 if __name__ == "__main__":

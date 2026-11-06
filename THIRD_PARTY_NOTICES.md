@@ -6,7 +6,7 @@
 
 | ID | 上游 | 许可证 | 商业使用 |
 |---|---|---|---|
-| `ppt-master` | [xztsummer/ppt-master](https://github.com/xztsummer/ppt-master)（基于 [hugohe3/ppt-master](https://github.com/hugohe3/ppt-master) v6.7.2，含公司 deck） | MIT | 允许；保留版权与许可声明 |
+| `ppt-master` | [xztsummer/ppt-master](https://github.com/xztsummer/ppt-master)（同步自 [hugohe3/ppt-master](https://github.com/hugohe3/ppt-master)，当前 v6.8.0，含公司 deck） | MIT | 允许；保留版权与许可声明 |
 | `gorden-ppt-skill`（脚本、`references/`、元数据） | [GordenSun/GordenPPTSkill](https://github.com/GordenSun/GordenPPTSkill) | MIT | 允许 |
 | `gorden-ppt-skill/templates/`（`.pptx` 与预览图） | 同上；模板来自公开中文模板渠道，见其 `NOTICE.md` | 第三方模板作者版权，非商业许可 | **禁止**；仅限个人学习与研究 |
 | `html-ppt` | [lewislulu/html-ppt-skill](https://github.com/lewislulu/html-ppt-skill) | MIT | 允许；保留版权声明 |

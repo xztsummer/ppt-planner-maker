@@ -29,6 +29,28 @@ DEFAULT_DEPS_FILE = SKILL_ROOT / "scripts" / "deps.json"
 
 VALID_BRANCHES = tuple("ABCDEF")
 
+# Roots a host may scan for skills.  A dependency here can be triggered by the
+# host directly, bypassing the orchestrator.
+HOST_SCANNED_SOURCES = {
+    "project-dsh",
+    "project-zcode",
+    "project-agents",
+    "user-dsh",
+    "user-zcode",
+    "user-agents",
+    "claude-user",
+}
+
+
+def private_home() -> Path:
+    """Private home for dependencies; hosts do not scan it."""
+    configured = os.environ.get("PPT_PLANNER_HOME")
+    return Path(configured).expanduser() if configured else Path.home() / ".ppt-planner"
+
+
+def private_skills_root() -> Path:
+    return private_home() / "skills"
+
 
 # ---------------------------------------------------------------------------
 # small helpers
@@ -90,12 +112,68 @@ def _read_version(root: Path) -> Optional[str]:
         try:
             data = json.loads(manifest.read_text(encoding="utf-8", errors="replace"))
         except (OSError, ValueError):
-            return None
+            data = None
         if isinstance(data, dict):
             version = data.get("version")
             if version:
                 return str(version)
+    # ppt-master keeps its version in SKILL.md frontmatter metadata, not VERSION.
+    skill_md = root / "SKILL.md"
+    if skill_md.is_file():
+        try:
+            text = skill_md.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return None
+        parts = text.split("---", 2)
+        if len(parts) >= 3:
+            for line in parts[1].splitlines():
+                match = re.match(r"^\s+version:\s*[\"']?([^\"'\s#]+)", line)
+                if match:
+                    return match.group(1).strip()
     return None
+
+
+def _read_git_head(root: Path) -> Optional[str]:
+    """Return the checkout's HEAD commit without running git; None if unknown."""
+    git_dir = root / ".git"
+    if not git_dir.is_dir():
+        return None
+    try:
+        head = (git_dir / "HEAD").read_text(encoding="utf-8").strip()
+        if not head.startswith("ref:"):
+            return head if re.fullmatch(r"[0-9a-f]{40}", head) else None
+        ref = head.split(":", 1)[1].strip()
+        loose = git_dir / ref
+        if loose.is_file():
+            return loose.read_text(encoding="utf-8").strip()
+        packed = git_dir / "packed-refs"
+        if packed.is_file():
+            for line in packed.read_text(encoding="utf-8").splitlines():
+                parts = line.split()
+                if len(parts) == 2 and parts[1] == ref:
+                    return parts[0]
+    except OSError:
+        return None
+    return None
+
+
+def tested_commit(tested_version: str) -> Optional[str]:
+    match = re.search(r"\b[0-9a-f]{40}\b", tested_version or "")
+    return match.group(0) if match else None
+
+
+def version_drift(skill: Dict[str, Any], root: Path, version: Optional[str]) -> Dict[str, Any]:
+    """Compare an install with testedVersion/testedRelease.  Unknown is not drift."""
+    commit = tested_commit(skill.get("testedVersion", ""))
+    release = skill.get("testedRelease")
+    head = _read_git_head(root)
+    if head and commit:
+        state = "match" if head == commit else "drift"
+        return {"state": state, "installed": head[:7], "tested": commit[:7]}
+    if version and release:
+        state = "match" if str(version) == str(release) else "drift"
+        return {"state": state, "installed": str(version), "tested": str(release)}
+    return {"state": "unknown", "installed": version, "tested": release or (commit or "")[:7]}
 
 
 # ---------------------------------------------------------------------------
@@ -136,9 +214,30 @@ def load_deps(path: Path) -> Dict[str, Any]:
         for cap_id, cap in capabilities.items():
             if not isinstance(cap, dict) or not isinstance(cap.get("path"), str):
                 raise ValueError(f"{skill_id}: capability {cap_id} 缺少字符串 path")
+            if "requireAnyChild" in cap and not isinstance(cap["requireAnyChild"], bool):
+                raise ValueError(
+                    f"{skill_id}: capability {cap_id} 的 requireAnyChild 必须是布尔值"
+                )
+            if "childPath" in cap and not isinstance(cap["childPath"], str):
+                raise ValueError(
+                    f"{skill_id}: capability {cap_id} 的 childPath 必须是字符串"
+                )
             for branch in cap.get("for", []):
                 if branch not in VALID_BRANCHES:
                     raise ValueError(f"{skill_id}: capability {cap_id} 的 for 含非法分支 {branch}")
+        runtime = skill.get("runtime")
+        if runtime is not None:
+            if not isinstance(runtime, dict):
+                raise ValueError(f"{skill_id}: runtime 必须是对象")
+            for key in ("python", "optionalPython", "commands", "optionalCommands", "anyCommands"):
+                values = runtime.get(key, [])
+                if not isinstance(values, list) or any(
+                    not isinstance(value, str) or not value for value in values
+                ):
+                    raise ValueError(f"{skill_id}: runtime.{key} 必须是字符串数组")
+            for key in ("install", "note"):
+                if key in runtime and not isinstance(runtime[key], str):
+                    raise ValueError(f"{skill_id}: runtime.{key} 必须是字符串")
     return data
 
 
@@ -170,16 +269,22 @@ def build_roots(
     explicit: Sequence[Path],
     dsh_home: Path,
     agents_home: Path,
+    zcode_home: Optional[Path] = None,
 ) -> List[Dict[str, Any]]:
+    if zcode_home is None:
+        zcode_home = Path(os.environ.get("ZCODE_HOME") or (Path.home() / ".zcode"))
     raw: List[Tuple[str, Path]] = []
     for path in explicit:
         raw.append(("explicit", path))
     raw.extend(
         [
             ("project-dsh", workspace / ".dsh" / "skills"),
+            ("project-zcode", workspace / ".zcode" / "skills"),
             ("project-agents", workspace / ".agents" / "skills"),
             ("legacy-workspace", workspace / "skills"),
+            ("user-private", private_skills_root()),
             ("user-dsh", dsh_home / "skills"),
+            ("user-zcode", zcode_home / "skills"),
             ("user-agents", agents_home / "skills"),
             ("claude-user", Path.home() / ".claude" / "skills"),
         ]
@@ -221,6 +326,7 @@ def _probe_capabilities(
     skill: Dict[str, Any],
     root: Path,
     active_branches: Iterable[str],
+    company_template_file: bool = False,
 ) -> Tuple[Dict[str, Dict[str, Any]], List[str]]:
     branches = set(active_branches)
     capabilities: Dict[str, Dict[str, Any]] = {}
@@ -229,15 +335,34 @@ def _probe_capabilities(
         relative = cap["path"]
         target = root / relative
         status = "ok" if target.exists() else "missing"
+        if status == "ok" and cap.get("requireAnyChild"):
+            try:
+                children = [child for child in target.iterdir() if child.is_dir()]
+            except OSError:
+                children = []
+            child_path = cap.get("childPath")
+            if child_path:
+                has_child = any((child / child_path).exists() for child in children)
+            else:
+                has_child = bool(children)
+            if not has_child:
+                status = "empty"
         required = bool(cap.get("required", False))
         if not required and set(cap.get("for", [])) & branches:
             required = True
+        # A raw company .pptx/.potx is edited or imported directly; it does
+        # not need a pre-installed deck.  The default branch-A installed-deck
+        # path keeps both probes mandatory.
+        if company_template_file and cap_id in {"decks", "deck-index"}:
+            required = False
         capabilities[cap_id] = {
             "path": str(target),
             "relativePath": relative,
             "status": status,
             "required": required,
         }
+        if cap.get("childPath"):
+            capabilities[cap_id]["childPath"] = cap["childPath"]
         if required and status != "ok":
             missing_required.append(cap_id)
     return capabilities, missing_required
@@ -247,6 +372,7 @@ def resolve_skill(
     skill: Dict[str, Any],
     roots: Sequence[Dict[str, Any]],
     branches: Sequence[str],
+    company_template_file: bool = False,
 ) -> Dict[str, Any]:
     skill_id = skill["id"]
     candidates: List[Dict[str, Any]] = []
@@ -293,6 +419,7 @@ def resolve_skill(
         "resolvedFrom": None,
         "version": None,
         "shadowed": [],
+        "drift": {"state": "unknown"},
         "capabilities": {},
         "missingRequired": [],
         "warnings": [],
@@ -301,12 +428,27 @@ def resolve_skill(
     if not candidates:
         return base_result
 
-    chosen = candidates[0]
+    # A valid directory bundle always wins over a stray flat <id>.md file.
+    # Otherwise one leftover file in a high-priority root would block a real
+    # installation lower down.
+    bundles = [candidate for candidate in candidates if candidate["kind"] == "bundle"]
+    flats = [candidate for candidate in candidates if candidate["kind"] == "flat"]
+    chosen = bundles[0] if bundles else flats[0]
     base_result["resolvedFrom"] = chosen["source"]
     base_result["shadowed"] = [
-        {"root": other["root"], "skillFile": other["skillFile"], "source": other["source"]}
-        for other in candidates[1:]
+        {
+            "kind": other["kind"],
+            "root": other["root"],
+            "skillFile": other["skillFile"],
+            "source": other["source"],
+        }
+        for other in candidates
+        if other is not chosen
     ]
+    if bundles and flats:
+        base_result["warnings"].append(
+            "已忽略扁平 <id>.md；目录型 <id>/SKILL.md 优先。"
+        )
 
     if chosen["kind"] == "flat":
         base_result["status"] = "invalid"
@@ -320,7 +462,10 @@ def resolve_skill(
     base_result["root"] = str(root)
     base_result["skillFile"] = chosen["skillFile"]
     base_result["version"] = _read_version(root)
-    capabilities, missing_required = _probe_capabilities(skill, root, active_branches)
+    base_result["drift"] = version_drift(skill, root, base_result["version"])
+    capabilities, missing_required = _probe_capabilities(
+        skill, root, active_branches, company_template_file
+    )
     base_result["capabilities"] = capabilities
     base_result["missingRequired"] = missing_required
     base_result["status"] = "ok" if not missing_required else "incomplete"
@@ -335,6 +480,7 @@ def resolve(
     roots: Sequence[Dict[str, Any]],
     workspace: Path,
     branches: Sequence[str],
+    company_template_file: bool = False,
 ) -> Dict[str, Any]:
     warnings: List[str] = []
     if not workspace.is_dir():
@@ -352,7 +498,9 @@ def resolve(
 
     resolved: Dict[str, Dict[str, Any]] = {}
     for skill in selected:
-        resolved[skill["id"]] = resolve_skill(skill, roots, branches)
+        resolved[skill["id"]] = resolve_skill(
+            skill, roots, branches, company_template_file
+        )
 
     ok_count = sum(1 for item in resolved.values() if item["status"] == "ok")
     return {
@@ -361,6 +509,7 @@ def resolve(
         "skillRoot": str(SKILL_ROOT),
         "workspace": str(workspace.resolve()),
         "branches": list(branches),
+        "companyTemplateFile": company_template_file,
         "searchedRoots": list(roots),
         "installRootHint": deps.get("installRootHint", ""),
         "skills": resolved,
@@ -399,6 +548,13 @@ def _print_human(result: Dict[str, Any]) -> None:
         if item["status"] != "ok":
             if item.get("missingRequired"):
                 print(f"      missing required: {', '.join(item['missingRequired'])}")
+            empty = [
+                cap_id
+                for cap_id, cap in item.get("capabilities", {}).items()
+                if cap.get("status") == "empty"
+            ]
+            if empty:
+                print(f"      empty: {', '.join(empty)} (需要至少一个子目录)")
             if item.get("skillFile"):
                 print(f"      skill file: {item['skillFile']}")
             if item.get("install"):
@@ -410,6 +566,26 @@ def _print_human(result: Dict[str, Any]) -> None:
         print("\nwarnings:")
         for warning in result["warnings"]:
             print(f"  - {warning}")
+
+
+def _brief_line(result: Dict[str, Any]) -> str:
+    branch_text = ",".join(result["branches"]) if result["branches"] else "all"
+    parts: List[str] = []
+    for skill_id, item in result["skills"].items():
+        detail = item["status"]
+        if item["status"] != "ok":
+            missing = item.get("missingRequired") or []
+            if missing:
+                detail += "(" + ",".join(missing) + ")"
+            if item.get("install"):
+                detail += " install=" + item["install"]
+        elif item.get("root"):
+            detail += "@" + item["root"]
+        parts.append(f"{skill_id}={detail}")
+    line = f"{result['skillName']}: branches={branch_text}; " + "; ".join(parts)
+    if result["warnings"]:
+        line += "; warnings=" + " | ".join(result["warnings"])
+    return line
 
 
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
@@ -442,7 +618,20 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default="",
         help="只解析这些依赖 id，例如 ppt-master,html-ppt。",
     )
+    parser.add_argument(
+        "--company-template-file",
+        action="store_true",
+        help=(
+            "用户自带公司 .pptx/.potx 模板文件；分支 A 不要求预装 deck。"
+            "选择已安装 deck 时不要使用。"
+        ),
+    )
     parser.add_argument("--json", action="store_true", help="输出 JSON。")
+    parser.add_argument(
+        "--brief",
+        action="store_true",
+        help="输出一行摘要，适合直接给用户看；与 --json 同用时以 JSON 为准。",
+    )
     parser.add_argument(
         "--check",
         action="store_true",
@@ -473,6 +662,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         agents_home = Path(
             os.environ.get("DSH_AGENTS_HOME") or (Path.home() / ".agents")
         )
+        zcode_home = Path(
+            os.environ.get("ZCODE_HOME") or (Path.home() / ".zcode")
+        )
 
         explicit_values = list(args.skills_dir)
         env_dirs = os.environ.get("PPT_PLANNER_SKILLS_DIR")
@@ -485,8 +677,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if not selected:
             raise ValueError("没有匹配的依赖；请检查 --branches 或 --only。")
 
-        roots = build_roots(workspace, explicit, dsh_home, agents_home)
-        result = resolve(deps, selected, roots, workspace, branches)
+        roots = build_roots(workspace, explicit, dsh_home, agents_home, zcode_home)
+        result = resolve(
+            deps, selected, roots, workspace, branches, args.company_template_file
+        )
     except (OSError, ValueError) as exc:
         print(f"resolve_skills: {exc}", file=sys.stderr)
         return 2
@@ -501,6 +695,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
+    elif args.brief:
+        print(_brief_line(result))
     else:
         _print_human(result)
 

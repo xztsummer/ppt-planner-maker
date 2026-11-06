@@ -2,34 +2,53 @@
   "schemaVersion": 1,
   "skillName": "ppt-planner-maker",
   "description": "外部制作 Skill 清单。编排层只引用 id，不写物理路径；路径由 resolve_skills.py 解析。",
-  "installRootHint": "<skills-dir> 指本机任一被宿主扫描的 skills 根目录，例如 ~/.dsh/skills 或 <workspace>/.dsh/skills。",
+  "installRootHint": "setup.py 默认安装到私有根 ~/.ppt-planner/skills（PPT_PLANNER_HOME 可覆盖，宿主不扫描，只暴露编排层）；手动安装时 <skills-dir> 可用该目录或解析顺序中的任一根目录。",
   "skills": [
     {
       "id": "ppt-master",
       "title": "PPTX 引擎：公司模板 / 自由设计 / 原生编辑 / 美化",
       "source": "https://github.com/xztsummer/ppt-master",
-      "sourceNote": "hugohe3/ppt-master v6.7.2 的定制 fork，含中国电子云、中国电信、中汽研 deck；分支 A 必须使用此 fork。",
+      "sourceNote": "定期同步 hugohe3/ppt-master 的定制 fork（当前 v6.8.0），自带中国电子云、中国电信、中汽研 deck；分支 A 选择已安装 deck 时要求至少一个可用 deck。用户自带 .pptx/.potx 公司模板文件时，预检显式加 --company-template-file，不要求预装 deck。",
       "license": "MIT",
-      "testedVersion": "0e8d92c4e54b037b2b677f4fcaf3b01b63d38316（fork main，2026-10-21）",
+      "testedVersion": "bc72031ab1e28ee882c452ca67f2b1e9280d197a（fork main，同步上游 v6.8.0，2026-11-06）",
       "branches": ["A", "B", "F"],
       "capabilities": {
         "skill": { "path": "SKILL.md", "required": true },
         "routing": { "path": "workflows/routing.md", "required": true },
         "scripts": { "path": "scripts", "required": true },
-        "decks": { "path": "templates/decks", "required": false },
-        "deck:中国电子云": { "path": "templates/decks/中国电子云", "required": false, "for": ["A"] }
+        "requirements": { "path": "requirements.txt", "required": true },
+        "decks": {
+          "path": "templates/decks",
+          "required": false,
+          "for": ["A"],
+          "requireAnyChild": true,
+          "childPath": "templates/design_spec.md"
+        },
+        "deck-index": {
+          "path": "templates/decks/decks_index.json",
+          "required": false,
+          "for": ["A"]
+        }
+      },
+      "runtime": {
+        "python": ["yaml", "pptx", "xlsxwriter", "pathops", "uharfbuzz"],
+        "optionalPython": ["edge_tts", "fitz"],
+        "optionalCommands": ["soffice"],
+        "install": "python -m pip install -r <ppt-master>/requirements.txt",
+        "note": "soffice 只用于 .ppt 转换与视觉预览；不在 PATH 时脚本会尝试常见安装路径。edge-tts / PyMuPDF 为可选能力。skia-pathops 在过新的 Python 上可能缺少可用 wheel，建议改用带 wheel 的 Python（如 3.11/3.12）。"
       },
       "install": {
         "type": "git",
         "url": "https://github.com/xztsummer/ppt-master.git",
         "targetName": "ppt-master"
-      }
+      },
+      "testedRelease": "6.8.0"
     },
     {
       "id": "gorden-ppt-skill",
       "title": "中文内置模板 PPTX（复杂豪华）",
       "source": "https://github.com/GordenSun/GordenPPTSkill",
-      "sourceNote": "内置模板与预览素材为非商业许可，见其 NOTICE.md；代码为 MIT。",
+      "sourceNote": "内置模板与预览素材为非商业许可，见其 NOTICE.md；代码为 MIT。复杂豪华由内置模板（模式 A）兑现；原创模式 C 仅做简洁版式，不能承接复杂豪华。",
       "license": "MIT（代码）/ 非商业（内置模板）",
       "testedVersion": "1.0.20（7d4a61cbd8363b92e4a30784f8ca460a0a2b0a33，2026-06-22）",
       "branches": ["C"],
@@ -41,11 +60,17 @@
         "build-script": { "path": "scripts/build_pptx.py", "required": true },
         "version": { "path": "VERSION", "required": false }
       },
+      "runtime": {
+        "python": ["pptx"],
+        "install": "python -m pip install python-pptx",
+        "note": "编排层调用时不执行会改写安装的 scripts/apply_update.py，只跑只读的 scripts/check_update.py；有新版本先告知用户，同意后才更新。Windows 上把 python3 换成 python。"
+      },
       "install": {
         "type": "git",
         "url": "https://github.com/GordenSun/GordenPPTSkill.git",
         "targetName": "gorden-ppt-skill"
-      }
+      },
+      "testedRelease": "1.0.20"
     },
     {
       "id": "html-ppt",
@@ -61,6 +86,10 @@
         "references": { "path": "references", "required": false },
         "scripts": { "path": "scripts", "required": false }
       },
+      "runtime": {
+        "anyCommands": ["msedge", "chrome", "firefox"],
+        "note": "无 Python 运行时依赖；视觉检查需要本地浏览器（Edge/Chrome/Firefox 任一即可，脚本会尝试常见安装路径）。"
+      },
       "install": {
         "type": "git",
         "url": "https://github.com/lewislulu/html-ppt-skill.git",
@@ -72,13 +101,18 @@
       "title": "杂志风 / 瑞士风 HTML 演示文稿",
       "source": "https://github.com/op7418/guizang-ppt-skill",
       "license": "AGPL-3.0",
-      "testedVersion": "c91369c449d34755d320a8b81d0734000d99d1ab（main，2026-08-07）",
+      "testedVersion": "93d21bf4a73a851907a6eb00acbf30618236667a（main，2026-10-30）",
       "branches": ["E"],
       "capabilities": {
         "skill": { "path": "SKILL.md", "required": true },
         "assets": { "path": "assets", "required": true },
         "references": { "path": "references", "required": true },
         "scripts": { "path": "scripts", "required": false }
+      },
+      "runtime": {
+        "anyCommands": ["msedge", "chrome", "firefox"],
+        "note": "无 Python 运行时依赖；视觉检查需要浏览器（Edge/Chrome/Firefox 任一即可），离线放映需先验证字体/图标。用户指定品牌色时需要 node 运行 scripts/gz-theme.mjs。",
+        "optionalCommands": ["node"]
       },
       "install": {
         "type": "git",
