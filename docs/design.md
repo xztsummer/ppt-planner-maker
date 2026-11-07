@@ -33,7 +33,7 @@
 3. 改 `README.md` 与 `README.en.md` 的路由摘要表。
 4. 改 `scripts/deps.json` 的分支、能力探针与运行时清单，并同步 `references/dependencies.md`。
 5. 改本地 `evals/cases.md` 的期望分支/Skill，补一条反例。
-6. 跑：
+6. 跑静态检查；本地有 `tests/` 时再跑单测（该目录不随仓库分发）：
 
    ```bash
    python scripts/check_skill.py

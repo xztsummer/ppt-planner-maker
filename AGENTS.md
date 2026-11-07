@@ -1,6 +1,6 @@
 # 仓库开发约定
 
-本仓库只维护 `ppt-planner-maker` 一个编排 Skill：根目录 `SKILL.md` 是运行时入口（`references/` 是运行时正文），`scripts/` 是依赖解析与自检，`docs/` 是维护者文档，`tests/` 是 Python 单测。不再有 `skills/` 中间层。
+本仓库只维护 `ppt-planner-maker` 一个编排 Skill：根目录 `SKILL.md` 是运行时入口（`references/` 是运行时正文），`scripts/` 是依赖解析与自检，`docs/` 是维护者文档，`tests/` 是不随仓库分发的本地 Python 单测。不再有 `skills/` 中间层。
 
 ## 边界与外部依赖
 
@@ -23,7 +23,7 @@
 
 - **改路由**（分支/条件/制作路线/视觉密度/模板来源）：`SKILL.md` §四 → `references/production.md` → `README.md`+`README.en.md` 摘要 → `scripts/deps.json`+`references/dependencies.md` → `evals/cases.md` 期望值；字段级改动另同步 `references/intake.md`、`references/planning.md`、`references/confirmation.md` 与 `需求调研.md` 模板。
 - **新增宿主 skills 根目录**：`scripts/resolve_skills.py` 的 `build_roots` + `references/dependencies.md` + `docs/install.md` + 两个 README 一起改。
-- 改完必跑 `python scripts/check_skill.py`（0 error 才算过；`STALE_TERMS` 会拦截"只有一套就直接用"等旧口径）和 `python -B -m unittest discover -s tests`。`check_skill` 只能证明结构一致，路由行为要靠干跑。
+- 改完必跑 `python scripts/check_skill.py`（0 error 才算过；`STALE_TERMS` 会拦截"只有一套就直接用"等旧口径）；本地有 `tests/` 时还要跑 `python -B -m unittest discover -s tests`。`check_skill` 只能证明结构一致，路由行为要靠干跑。
 
 ## 评测（本地，不随仓库分发）
 

@@ -212,6 +212,18 @@ def _version_description(skill: Dict[str, Any], item: Dict[str, Any]) -> str:
     drift = item.get("drift") or {}
     installed = item.get("version") or drift.get("installed")
     tested = skill.get("testedRelease") or drift.get("tested")
+    # The release string can be identical on two different Git checkouts.
+    # Preserve the resolver's commit comparison instead of hiding it behind VERSION.
+    def with_commit(version: Any, comparison: Any) -> str:
+        value = str(version)
+        if comparison and re.fullmatch(r"[0-9a-f]{7,40}", str(comparison)):
+            return f"{value}（commit {comparison}）" if value != str(comparison) else f"commit {comparison}"
+        return value
+
+    if installed:
+        installed = with_commit(installed, drift.get("installed"))
+    if tested:
+        tested = with_commit(tested, drift.get("tested"))
     installed_text = f"已装 {installed}" if installed and drift.get("state") != "unknown" else "版本未知"
     return installed_text + (f"，已测 {tested}" if tested else "")
 

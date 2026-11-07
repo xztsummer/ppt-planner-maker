@@ -272,7 +272,6 @@ ppt-planner-maker/
 │   ├── install.md           # 安装与宿主发现规则
 │   ├── migration.md         # 从 0.9 及旧工作区迁移
 │   └── design.md            # 维护者：单一事实源与扩展方式
-├── tests/                   # Python 单元测试
 ├── README.md / README.en.md
 ├── AGENTS.md                # 仓库开发约定
 ├── VERSION / CHANGELOG.md
@@ -280,7 +279,7 @@ ppt-planner-maker/
 └── THIRD_PARTY_NOTICES.md   # 外部依赖许可矩阵
 ```
 
-`evals/` 为本地路由评测目录，不随仓库分发；规则见 [docs/design.md](docs/design.md)。
+`evals/` 和 `tests/` 分别为本地评测和单测目录，不随仓库分发；规则见 [docs/design.md](docs/design.md)。
 
 ## 开发与验证
 
@@ -293,11 +292,11 @@ python scripts/check_skill.py
 # 运行时依赖探针（可加 --check）
 python scripts/check_runtime.py --branches A,B,C,D,E,F
 
-# 解析器与自检的单元测试
+# 本地有 tests/ 时运行单元测试
 python -B -m unittest discover -s tests
 ```
 
-改路由时按 [docs/design.md](docs/design.md) 的同步清单更新 `SKILL.md`、`production.md`、`README.md`/`README.en.md`、`scripts/deps.json`、`references/dependencies.md` 和本地 `evals/cases.md`，再跑上面的检查。CI 会跑静态检查和单测；仓库不依赖第三方 Python 包。
+改路由时按 [docs/design.md](docs/design.md) 的同步清单更新 `SKILL.md`、`production.md`、`README.md`/`README.en.md`、`scripts/deps.json`、`references/dependencies.md` 和本地 `evals/cases.md`，再跑适用的检查。CI 运行静态检查；仓库不依赖第三方 Python 包。
 
 ## 常见问题
 

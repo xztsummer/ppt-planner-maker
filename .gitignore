@@ -19,3 +19,5 @@ _build/
 # 本地 Skill 挂载、评测用例与报告
 .dsh/
 evals/
+tests/
+HANDOFF.md

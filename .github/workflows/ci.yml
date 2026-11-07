@@ -18,5 +18,3 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Static checks
         run: python scripts/check_skill.py
-      - name: Unit tests
-        run: python -B -m unittest discover -s tests

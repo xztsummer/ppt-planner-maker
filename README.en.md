@@ -272,7 +272,6 @@ ppt-planner-maker/
 │   ├── install.md           # install and host discovery
 │   ├── migration.md         # migrate from 0.9 and the old workspace layout
 │   └── design.md            # maintainers: single source of truth and extension
-├── tests/                   # Python unit tests
 ├── README.md / README.en.md
 ├── AGENTS.md                # repository development conventions
 ├── VERSION / CHANGELOG.md
@@ -280,7 +279,7 @@ ppt-planner-maker/
 └── THIRD_PARTY_NOTICES.md   # external dependency license matrix
 ```
 
-`evals/` is a local routing evaluation directory and is not distributed with the repository; see [docs/design.md](docs/design.md).
+`evals/` and `tests/` hold local evaluations and unit tests and are not distributed with the repository; see [docs/design.md](docs/design.md).
 
 ## Development and verification
 
@@ -293,11 +292,11 @@ python scripts/check_skill.py
 # Runtime probe (add --check to fail on missing packages)
 python scripts/check_runtime.py --branches A,B,C,D,E,F
 
-# Unit tests for the resolver and the checker
+# Unit tests, when the local tests/ directory is available
 python -B -m unittest discover -s tests
 ```
 
-When routing changes, follow the sync checklist in [docs/design.md](docs/design.md): update `SKILL.md`, `production.md`, both READMEs, `scripts/deps.json`, `references/dependencies.md` and local `evals/cases.md`, then run the checks above. CI runs the static checks and unit tests; the repository uses only the Python standard library.
+When routing changes, follow the sync checklist in [docs/design.md](docs/design.md): update `SKILL.md`, `production.md`, both READMEs, `scripts/deps.json`, `references/dependencies.md` and local `evals/cases.md`, then run the applicable checks above. CI runs static checks; the repository uses only the Python standard library.
 
 ## FAQ
 
